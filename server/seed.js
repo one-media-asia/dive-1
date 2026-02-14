@@ -28,6 +28,13 @@ const courses = [
   { name: 'Freediving Course', price: 299 },
 ];
 
+const groups = [
+  { name: 'Beginner Fun Dive Group', type: 'fundive', days: 1, description: 'Relaxed fun dive for beginners' },
+  { name: 'Advanced Fun Dive Group', type: 'fundive', days: 2, description: 'More challenging dive sites for experienced divers' },
+  { name: 'Weekend Explorers', type: 'fundive', days: 3, description: 'Weekend diving adventure' },
+  { name: 'Coral Reef Tour', type: 'fundive', days: 2, description: 'Guided tour of coral reef formations' },
+];
+
 const accommodations = [
   { name: 'Budget Dorm', price_per_night: 25, tier: 'budget' },
   { name: 'Standard Room', price_per_night: 75, tier: 'standard' },
@@ -108,6 +115,17 @@ db.serialize(() => {
       [uuidv4(), course.name, course.price],
       (err) => {
         if (!err) console.log(`Added course: ${course.name}`);
+      }
+    );
+  });
+
+  // Seed groups
+  groups.forEach((group) => {
+    db.run(
+      'INSERT OR IGNORE INTO groups (id, name, type, days, description) VALUES (?, ?, ?, ?, ?)',
+      [uuidv4(), group.name, group.type, group.days, group.description],
+      (err) => {
+        if (!err) console.log(`Added group: ${group.name}`);
       }
     );
   });

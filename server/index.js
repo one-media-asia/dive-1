@@ -451,14 +451,16 @@ app.get('/api/bookings', (req, res) => {
 
   db.all(`
     SELECT 
-      b.id, b.diver_id, b.course_id, b.accommodation_id, b.check_in, b.check_out,
+      b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
       b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at,
       d.name as diver_name,
       c.name as course_name, c.price as course_price,
+      g.name as group_name, g.days as group_days,
       a.name as accommodation_name, a.price_per_night, a.tier
     FROM bookings b
     LEFT JOIN divers d ON b.diver_id = d.id
     LEFT JOIN courses c ON b.course_id = c.id
+    LEFT JOIN groups g ON b.group_id = g.id
     LEFT JOIN accommodations a ON b.accommodation_id = a.id
     ORDER BY b.created_at DESC
   `, (err, bookings) => {
@@ -469,6 +471,7 @@ app.get('/api/bookings', (req, res) => {
       id: b.id,
       diver_id: b.diver_id,
       course_id: b.course_id,
+      group_id: b.group_id,
       accommodation_id: b.accommodation_id,
       check_in: b.check_in,
       check_out: b.check_out,
@@ -479,6 +482,7 @@ app.get('/api/bookings', (req, res) => {
       created_at: b.created_at,
       divers: { name: b.diver_name },
       courses: { name: b.course_name, price: b.course_price },
+      groups: { name: b.group_name, days: b.group_days },
       accommodations: { name: b.accommodation_name, price_per_night: b.price_per_night, tier: b.tier }
     }));
     res.json(result);
@@ -510,7 +514,7 @@ app.get('/api/bookings/stats/last30days', (req, res) => {
 
 // POST /api/bookings - create a booking
 app.post('/api/bookings', (req, res) => {
-  const { diver_id, course_id, accommodation_id, check_in, check_out, total_amount, notes } = req.body;
+  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, notes } = req.body;
   const id = uuidv4();
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
@@ -520,9 +524,9 @@ app.post('/api/bookings', (req, res) => {
 
   const db = getDb();
   db.run(
-    `INSERT INTO bookings (id, diver_id, course_id, accommodation_id, check_in, check_out, total_amount, invoice_number, payment_status, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?)`,
-    [id, diver_id, course_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, invoiceNumber, notes || null],
+    `INSERT INTO bookings (id, diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, invoice_number, payment_status, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?)`,
+    [id, diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, invoiceNumber, notes || null],
     (err) => {
       if (err) {
         db.close();
@@ -531,14 +535,16 @@ app.post('/api/bookings', (req, res) => {
 
       db.get(`
         SELECT 
-          b.id, b.diver_id, b.course_id, b.accommodation_id, b.check_in, b.check_out,
+          b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
           b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at,
           d.name as diver_name,
           c.name as course_name, c.price as course_price,
+          g.name as group_name, g.days as group_days,
           a.name as accommodation_name, a.price_per_night, a.tier
         FROM bookings b
         LEFT JOIN divers d ON b.diver_id = d.id
         LEFT JOIN courses c ON b.course_id = c.id
+        LEFT JOIN groups g ON b.group_id = g.id
         LEFT JOIN accommodations a ON b.accommodation_id = a.id
         WHERE b.id = ?
       `, [id], (err, booking) => {
@@ -548,6 +554,7 @@ app.post('/api/bookings', (req, res) => {
           id: booking.id,
           diver_id: booking.diver_id,
           course_id: booking.course_id,
+          group_id: booking.group_id,
           accommodation_id: booking.accommodation_id,
           check_in: booking.check_in,
           check_out: booking.check_out,
@@ -558,6 +565,7 @@ app.post('/api/bookings', (req, res) => {
           created_at: booking.created_at,
           divers: { name: booking.diver_name },
           courses: { name: booking.course_name, price: booking.course_price },
+          groups: { name: booking.group_name, days: booking.group_days },
           accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier }
         });
       });
@@ -634,7 +642,7 @@ app.delete('/api/divers/:id', (req, res) => {
 // PUT /api/bookings/:id - update a booking
 app.put('/api/bookings/:id', (req, res) => {
   const { id } = req.params;
-  const { diver_id, course_id, accommodation_id, check_in, check_out, total_amount, payment_status, notes } = req.body;
+  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, payment_status, notes } = req.body;
 
   if (!diver_id) {
     return res.status(400).json({ error: 'diver_id is required' });
@@ -642,9 +650,9 @@ app.put('/api/bookings/:id', (req, res) => {
 
   const db = getDb();
   db.run(
-    `UPDATE bookings SET diver_id = ?, course_id = ?, accommodation_id = ?, check_in = ?, check_out = ?, total_amount = ?, payment_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+    `UPDATE bookings SET diver_id = ?, course_id = ?, group_id = ?, accommodation_id = ?, check_in = ?, check_out = ?, total_amount = ?, payment_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [diver_id, course_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, payment_status || 'unpaid', notes || null, id],
+    [diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, payment_status || 'unpaid', notes || null, id],
     (err) => {
       if (err) {
         db.close();
@@ -653,14 +661,16 @@ app.put('/api/bookings/:id', (req, res) => {
 
       db.get(`
         SELECT 
-          b.id, b.diver_id, b.course_id, b.accommodation_id, b.check_in, b.check_out,
+          b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
           b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at, b.updated_at,
           d.name as diver_name,
           c.name as course_name, c.price as course_price,
+          g.name as group_name, g.days as group_days,
           a.name as accommodation_name, a.price_per_night, a.tier
         FROM bookings b
         LEFT JOIN divers d ON b.diver_id = d.id
         LEFT JOIN courses c ON b.course_id = c.id
+        LEFT JOIN groups g ON b.group_id = g.id
         LEFT JOIN accommodations a ON b.accommodation_id = a.id
         WHERE b.id = ?
       `, [id], (err, booking) => {
@@ -670,6 +680,7 @@ app.put('/api/bookings/:id', (req, res) => {
           id: booking.id,
           diver_id: booking.diver_id,
           course_id: booking.course_id,
+          group_id: booking.group_id,
           accommodation_id: booking.accommodation_id,
           check_in: booking.check_in,
           check_out: booking.check_out,
@@ -681,6 +692,7 @@ app.put('/api/bookings/:id', (req, res) => {
           updated_at: booking.updated_at,
           divers: { name: booking.diver_name },
           courses: { name: booking.course_name, price: booking.course_price },
+          groups: { name: booking.group_name, days: booking.group_days },
           accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier }
         });
       });

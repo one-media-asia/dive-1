@@ -15,6 +15,7 @@ import { equipment, rentalAssignments } from "@/hooks/usePOS";
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [divers, setDivers] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [accommodations, setAccommodations] = useState<any[]>([]);
   const [equipmentList, setEquipmentList] = useState<any[]>([]);
@@ -22,7 +23,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ diver_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
+  const [form, setForm] = useState({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
   const [selectedEquipment, setSelectedEquipment] = useState<Array<{ equipment_id: string; quantity: number }>>([]);
   const [rentalAssignmentsList, setRentalAssignmentsList] = useState<any[]>([]);
   const { toast } = useToast();
@@ -30,9 +31,10 @@ export default function BookingsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [b, d, c, a, s, e] = await Promise.all([
+      const [b, d, g, c, a, s, e] = await Promise.all([
         apiClient.bookings.list(),
         apiClient.divers.list(),
+        apiClient.groups.list(),
         apiClient.courses.list(),
         apiClient.accommodations.list(),
         apiClient.bookings.getLast30Days(),
@@ -40,6 +42,7 @@ export default function BookingsPage() {
       ]);
       setBookings(b);
       setDivers(d);
+      setGroups(g);
       setCourses(c);
       setAccommodations(a);
       setStats(s);
@@ -70,7 +73,9 @@ export default function BookingsPage() {
     if (booking) {
       setEditingId(booking.id);
       setForm({
+        booking_type: booking.group_id ? "fun_dive" : "course",
         diver_id: booking.diver_id,
+        group_id: booking.group_id || "",
         course_id: booking.course_id || "",
         accommodation_id: booking.accommodation_id || "",
         check_in: booking.check_in || "",
@@ -81,7 +86,7 @@ export default function BookingsPage() {
       loadRentalAssignments(booking.id);
     } else {
       setEditingId(null);
-      setForm({ diver_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
+      setForm({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
       setSelectedEquipment([]);
       setRentalAssignmentsList([]);
     }
@@ -103,6 +108,16 @@ export default function BookingsPage() {
       return;
     }
 
+    if (form.booking_type === "course" && !form.course_id) {
+      toast({ title: "Error", description: "Course is required for course booking", variant: "destructive" });
+      return;
+    }
+
+    if (form.booking_type === "fun_dive" && !form.group_id) {
+      toast({ title: "Error", description: "Group is required for fun dive booking", variant: "destructive" });
+      return;
+    }
+
     const total = calcTotal();
     try {
       let bookingId = editingId;
@@ -110,7 +125,8 @@ export default function BookingsPage() {
       if (editingId) {
         await apiClient.bookings.update(editingId, {
           diver_id: form.diver_id,
-          course_id: form.course_id || null,
+          course_id: form.booking_type === "course" ? form.course_id : null,
+          group_id: form.booking_type === "fun_dive" ? form.group_id : null,
           accommodation_id: form.accommodation_id || null,
           check_in: form.check_in || null,
           check_out: form.check_out || null,
@@ -122,7 +138,8 @@ export default function BookingsPage() {
       } else {
         const res = await apiClient.bookings.create({
           diver_id: form.diver_id,
-          course_id: form.course_id || null,
+          course_id: form.booking_type === "course" ? form.course_id : null,
+          group_id: form.booking_type === "fun_dive" ? form.group_id : null,
           accommodation_id: form.accommodation_id || null,
           check_in: form.check_in || null,
           check_out: form.check_out || null,
@@ -264,6 +281,27 @@ export default function BookingsPage() {
               <DialogTitle>{editingId ? "Edit Booking" : "New Booking"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {/* Booking Type Selector */}
+              <div>
+                <Label>Booking Type *</Label>
+                <div className="flex gap-3 mt-2">
+                  <Button
+                    variant={form.booking_type === "course" ? "default" : "outline"}
+                    onClick={() => setForm({ ...form, booking_type: "course", group_id: "" })}
+                    className="flex-1"
+                  >
+                    Course
+                  </Button>
+                  <Button
+                    variant={form.booking_type === "fun_dive" ? "default" : "outline"}
+                    onClick={() => setForm({ ...form, booking_type: "fun_dive", course_id: "" })}
+                    className="flex-1"
+                  >
+                    Fun Dive
+                  </Button>
+                </div>
+              </div>
+
               <div>
                 <Label>Diver *</Label>
                 <Select value={form.diver_id} onValueChange={(v) => setForm({ ...form, diver_id: v })}>
@@ -271,13 +309,29 @@ export default function BookingsPage() {
                   <SelectContent>{divers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Course</Label>
-                <Select value={form.course_id} onValueChange={(v) => setForm({ ...form, course_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select course (optional)" /></SelectTrigger>
-                  <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} (${c.price})</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+
+              {/* Course Selection - Only show for course bookings */}
+              {form.booking_type === "course" && (
+                <div>
+                  <Label>Course</Label>
+                  <Select value={form.course_id} onValueChange={(v) => setForm({ ...form, course_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select course (optional)" /></SelectTrigger>
+                    <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} (${c.price})</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Group Selection - Only show for fun dive bookings */}
+              {form.booking_type === "fun_dive" && (
+                <div>
+                  <Label>Group</Label>
+                  <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select group (optional)" /></SelectTrigger>
+                    <SelectContent>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name} ({g.days} days)</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div>
                 <Label>Accommodation</Label>
                 <Select value={form.accommodation_id} onValueChange={(v) => setForm({ ...form, accommodation_id: v })}>

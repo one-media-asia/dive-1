@@ -122,6 +122,7 @@ export function initDb() {
           id TEXT PRIMARY KEY,
           diver_id TEXT NOT NULL,
           course_id TEXT,
+          group_id TEXT,
           accommodation_id TEXT,
           check_in TEXT,
           check_out TEXT,
@@ -133,6 +134,7 @@ export function initDb() {
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY(diver_id) REFERENCES divers(id) ON DELETE CASCADE,
           FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE SET NULL,
+          FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE SET NULL,
           FOREIGN KEY(accommodation_id) REFERENCES accommodations(id) ON DELETE SET NULL
         )
       `);
