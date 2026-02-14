@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, FileText, Download } from "lucide-react";
+import { Plus, Trash2, Edit2, FileText, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/integrations/api/client";
+import { generateInvoicePDF, printInvoice } from "@/utils/invoiceGenerator";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -124,6 +125,65 @@ export default function BookingsPage() {
       load();
     } catch (err) {
       toast({ title: "Error", description: String(err), variant: "destructive" });
+    }
+  };
+
+  const calculateNights = (checkIn: string, checkOut: string): number => {
+    if (!checkIn || !checkOut) return 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const handleInvoiceDownload = async (booking: any) => {
+    try {
+      const nights = calculateNights(booking.check_in, booking.check_out);
+      const accommodationPrice = booking.accommodations?.price_per_night 
+        ? (booking.accommodations.price_per_night * nights)
+        : 0;
+
+      const invoiceData = {
+        diver: booking.divers?.name || "Unknown Diver",
+        course: booking.courses?.name || "No Course",
+        coursePrice: booking.courses?.price || 0,
+        accommodation: booking.accommodations?.name || "No Accommodation",
+        accommodationPrice: accommodationPrice,
+        totalAmount: booking.total_amount,
+        paymentStatus: booking.payment_status,
+        invoiceNumber: booking.invoice_number || booking.id,
+        dateCreated: new Date(booking.created_at).toLocaleDateString(),
+        checkIn: booking.check_in || "",
+        checkOut: booking.check_out || "",
+      };
+      generateInvoicePDF(invoiceData);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to generate invoice", variant: "destructive" });
+    }
+  };
+
+  const handleInvoicePrint = async (booking: any) => {
+    try {
+      const nights = calculateNights(booking.check_in, booking.check_out);
+      const accommodationPrice = booking.accommodations?.price_per_night 
+        ? (booking.accommodations.price_per_night * nights)
+        : 0;
+
+      const invoiceData = {
+        diver: booking.divers?.name || "Unknown Diver",
+        course: booking.courses?.name || "No Course",
+        coursePrice: booking.courses?.price || 0,
+        accommodation: booking.accommodations?.name || "No Accommodation",
+        accommodationPrice: accommodationPrice,
+        totalAmount: booking.total_amount,
+        paymentStatus: booking.payment_status,
+        invoiceNumber: booking.invoice_number || booking.id,
+        dateCreated: new Date(booking.created_at).toLocaleDateString(),
+        checkIn: booking.check_in || "",
+        checkOut: booking.check_out || "",
+      };
+      printInvoice(invoiceData);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to print invoice", variant: "destructive" });
     }
   };
 
@@ -285,6 +345,16 @@ export default function BookingsPage() {
                   </td>
                   <td>
                     <div className="flex gap-1">
+                      {b.payment_status === "paid" && (
+                        <>
+                          <Button variant="ghost" size="icon" onClick={() => handleInvoiceDownload(b)} title="Download Invoice">
+                            <Download className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleInvoicePrint(b)} title="Print Invoice">
+                            <Printer className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => handleOpenForm(b)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
