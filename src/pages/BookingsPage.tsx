@@ -178,14 +178,14 @@ export default function BookingsPage() {
                 <Label>Course</Label>
                 <Select value={form.course_id} onValueChange={(v) => setForm({ ...form, course_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select course (optional)" /></SelectTrigger>
-                  <SelectContent><SelectItem value="">None</SelectItem>{courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} (${c.price})</SelectItem>)}</SelectContent>
+                  <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name} (${c.price})</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Accommodation</Label>
                 <Select value={form.accommodation_id} onValueChange={(v) => setForm({ ...form, accommodation_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select accommodation (optional)" /></SelectTrigger>
-                  <SelectContent><SelectItem value="">None</SelectItem>{accommodations.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.tier === "free_with_course" ? "Free" : `$${a.price_per_night}/night`})</SelectItem>)}</SelectContent>
+                  <SelectContent>{accommodations.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.tier === "free_with_course" ? "Free" : `$${a.price_per_night}/night`})</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
