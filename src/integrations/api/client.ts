@@ -71,4 +71,15 @@ export const apiClient = {
     get: (diverID) => apiClient.request('GET', `/api/waivers/${diverID}`),
     create: (payload) => apiClient.request('POST', '/api/waivers', payload),
   },
+
+  diveSites: {
+    list: () => apiClient.request('GET', '/api/dive-sites'),
+    create: (payload) => apiClient.request('POST', '/api/dive-sites', payload),
+    delete: (id) => apiClient.request('DELETE', `/api/dive-sites/${id}`),
+  },
+
+  groupItinerary: {
+    get: (groupId) => apiClient.request('GET', `/api/groups/${groupId}/itinerary`),
+    updateDay: (groupId, payload) => apiClient.request('POST', `/api/groups/${groupId}/itinerary`, payload),
+  },
 };

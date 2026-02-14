@@ -151,6 +151,37 @@ export function initDb() {
           FOREIGN KEY(diver_id) REFERENCES divers(id) ON DELETE CASCADE,
           UNIQUE(diver_id)
         )
+      `);
+
+      // Dive Sites table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS dive_sites (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          location TEXT NOT NULL,
+          max_depth REAL,
+          difficulty TEXT,
+          description TEXT,
+          emergency_contacts TEXT,
+          nearest_hospital TEXT,
+          dan_info TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Group Dive Itinerary (plan which dive sites for each day of a group)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS group_dive_itinerary (
+          id TEXT PRIMARY KEY,
+          group_id TEXT NOT NULL,
+          day_number INTEGER NOT NULL,
+          dive_site_id TEXT,
+          notes TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE CASCADE,
+          FOREIGN KEY(dive_site_id) REFERENCES dive_sites(id) ON DELETE SET NULL,
+          UNIQUE(group_id, day_number)
+        )
       `, (err) => {
         if (err) reject(err);
         else resolve();

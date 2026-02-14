@@ -819,6 +819,146 @@ app.patch('/api/divers/:id/onboarding', (req, res) => {
   );
 });
 
+// GET /api/dive-sites - list all dive sites
+app.get('/api/dive-sites', (req, res) => {
+  const db = getDb();
+  db.all('SELECT id, name, location, max_depth, difficulty, description FROM dive_sites ORDER BY name ASC', (err, sites) => {
+    db.close();
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(sites || []);
+  });
+});
+
+// POST /api/dive-sites - create a dive site
+app.post('/api/dive-sites', (req, res) => {
+  const { name, location, max_depth, difficulty, description, emergency_contacts, nearest_hospital, dan_info } = req.body;
+  const id = uuidv4();
+
+  if (!name || !location) {
+    return res.status(400).json({ error: 'name and location are required' });
+  }
+
+  const db = getDb();
+  db.run(
+    `INSERT INTO dive_sites (id, name, location, max_depth, difficulty, description, emergency_contacts, nearest_hospital, dan_info)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, name, location, max_depth || null, difficulty || null, description || null, emergency_contacts || null, nearest_hospital || null, dan_info || null],
+    (err) => {
+      if (err) {
+        db.close();
+        return res.status(500).json({ error: err.message });
+      }
+      db.get('SELECT id, name, location, max_depth, difficulty, description FROM dive_sites WHERE id = ?', [id], (err, site) => {
+        db.close();
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(site);
+      });
+    }
+  );
+});
+
+// DELETE /api/dive-sites/:id - delete a dive site
+app.delete('/api/dive-sites/:id', (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  db.run('DELETE FROM dive_sites WHERE id = ?', [id], (err) => {
+    db.close();
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ ok: true });
+  });
+});
+
+// GET /api/groups/:id/itinerary - get dive itinerary for a group
+app.get('/api/groups/:id/itinerary', (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+
+  db.all(`
+    SELECT gdi.id, gdi.group_id, gdi.day_number, gdi.dive_site_id, gdi.notes,
+           ds.name as site_name, ds.location, ds.max_depth, ds.difficulty
+    FROM group_dive_itinerary gdi
+    LEFT JOIN dive_sites ds ON gdi.dive_site_id = ds.id
+    WHERE gdi.group_id = ?
+    ORDER BY gdi.day_number ASC
+  `, [id], (err, itinerary) => {
+    db.close();
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(itinerary || []);
+  });
+});
+
+// POST /api/groups/:id/itinerary - add or update dive plan for a day
+app.post('/api/groups/:id/itinerary', (req, res) => {
+  const { id } = req.params;
+  const { day_number, dive_site_id, notes } = req.body;
+
+  if (!day_number) {
+    return res.status(400).json({ error: 'day_number is required' });
+  }
+
+  const db = getDb();
+  
+  // Check if entry exists for this group and day
+  db.get('SELECT id FROM group_dive_itinerary WHERE group_id = ? AND day_number = ?', [id, day_number], (err, existing) => {
+    if (err) {
+      db.close();
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (existing) {
+      // Update
+      db.run(
+        `UPDATE group_dive_itinerary SET dive_site_id = ?, notes = ? WHERE group_id = ? AND day_number = ?`,
+        [dive_site_id || null, notes || null, id, day_number],
+        (err) => {
+          if (err) {
+            db.close();
+            return res.status(500).json({ error: err.message });
+          }
+          
+          db.get(`
+            SELECT gdi.id, gdi.group_id, gdi.day_number, gdi.dive_site_id, gdi.notes,
+                   ds.name as site_name, ds.location, ds.max_depth, ds.difficulty
+            FROM group_dive_itinerary gdi
+            LEFT JOIN dive_sites ds ON gdi.dive_site_id = ds.id
+            WHERE gdi.group_id = ? AND gdi.day_number = ?
+          `, [id, day_number], (err, result) => {
+            db.close();
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(result);
+          });
+        }
+      );
+    } else {
+      // Insert
+      const itineraryId = uuidv4();
+      db.run(
+        `INSERT INTO group_dive_itinerary (id, group_id, day_number, dive_site_id, notes)
+         VALUES (?, ?, ?, ?, ?)`,
+        [itineraryId, id, day_number, dive_site_id || null, notes || null],
+        (err) => {
+          if (err) {
+            db.close();
+            return res.status(500).json({ error: err.message });
+          }
+          
+          db.get(`
+            SELECT gdi.id, gdi.group_id, gdi.day_number, gdi.dive_site_id, gdi.notes,
+                   ds.name as site_name, ds.location, ds.max_depth, ds.difficulty
+            FROM group_dive_itinerary gdi
+            LEFT JOIN dive_sites ds ON gdi.dive_site_id = ds.id
+            WHERE gdi.id = ?
+          `, [itineraryId], (err, result) => {
+            db.close();
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(result);
+          });
+        }
+      );
+    }
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

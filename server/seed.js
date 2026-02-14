@@ -35,6 +35,15 @@ const accommodations = [
   { name: 'Free with Course', price_per_night: 0, tier: 'free_with_course' },
 ];
 
+const diveSites = [
+  { name: 'Blue Coral Gardens', location: 'North Bay', max_depth: 25, difficulty: 'easy' },
+  { name: 'The Wreck', location: 'Deep Channel', max_depth: 35, difficulty: 'moderate' },
+  { name: 'Shark Alley', location: 'East Point', max_depth: 40, difficulty: 'challenging' },
+  { name: 'Cathedral', location: 'South Ridge', max_depth: 45, difficulty: 'expert' },
+  { name: 'Turtle Cove', location: 'West Beach', max_depth: 20, difficulty: 'easy' },
+  { name: 'The Pinnacle', location: 'Central Banks', max_depth: 30, difficulty: 'moderate' },
+];
+
 console.log('Initializing database...');
 await initDb();
 
@@ -94,6 +103,17 @@ db.serialize(() => {
       [uuidv4(), acc.name, acc.price_per_night, acc.tier],
       (err) => {
         if (!err) console.log(`Added accommodation: ${acc.name}`);
+      }
+    );
+  });
+
+  // Seed dive sites
+  diveSites.forEach((site) => {
+    db.run(
+      'INSERT OR IGNORE INTO dive_sites (id, name, location, max_depth, difficulty) VALUES (?, ?, ?, ?, ?)',
+      [uuidv4(), site.name, site.location, site.max_depth, site.difficulty],
+      (err) => {
+        if (!err) console.log(`Added dive site: ${site.name}`);
       }
     );
   });
