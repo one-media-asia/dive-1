@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import AuthPage from "@/pages/AuthPage";
 import DashboardPage from "@/pages/DashboardPage";
 import DiveLogsPage from "@/pages/DiveLogsPage";
@@ -37,8 +38,9 @@ function ProtectedRoutes() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <AppLayout>
-      <Routes>
+    <ErrorBoundary>
+      <AppLayout>
+        <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/dive-logs" element={<DiveLogsPage />} />
         <Route path="/divers" element={<DiversPage />} />
@@ -59,8 +61,9 @@ function ProtectedRoutes() {
         <Route path="/emergency" element={<EmergencyPage />} />
         <Route path="/accommodations" element={<AccommodationsPage />} />
         <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AppLayout>
+        </Routes>
+      </AppLayout>
+    </ErrorBoundary>
   );
 }
 
