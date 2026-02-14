@@ -26,6 +26,7 @@ import InventoryPage from "@/pages/InventoryPage";
 import MaintenancePage from "@/pages/MaintenancePage";
 import HiraPage from "@/pages/HiraPage";
 import IncidentsPage from "@/pages/IncidentsPage";
+import DebugPage from "@/pages/DebugPage";
 
 const queryClient = new QueryClient();
 
@@ -79,7 +80,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
+              <Route path="/debug" element={<DebugPage />} />
+              <Route path="/*" element={<ProtectedRoutes />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
