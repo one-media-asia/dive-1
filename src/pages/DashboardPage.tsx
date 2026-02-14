@@ -1,22 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BookOpen, Users, MapPin, TrendingDown, GraduationCap, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMetrics from "@/hooks/useMetrics";
 import BookingsChart from "@/components/BookingsChart";
 import RevenueChart from "@/components/RevenueChart";
 import MaintenanceCard from "@/components/MaintenanceCard";
-import TopSelling from "@/components/TopSelling";
 import ExportButtons from "@/components/ExportButtons";
-import { exportToCSV } from "@/hooks/usePOS";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({ logs: 0, divers: 0, sites: 0, courses: 0, avgDepth: 0, revenue: 0 });
   const { loading, bookingsSeries, revenueSeries, maintenanceCounts } = useMetrics(15000);
 
-  // keep existing high-level stats for compatibility
-  // (existing logic retained but deferred to initial load via effect)
-  // For brevity we call a one-off loader here
-  useState(() => {
+  // Fetch high-level stats
+  useEffect(() => {
     (async () => {
       const [logs, divers, sites, courses, bookings] = await Promise.all([
         supabase.from("dive_logs").select("depth"),
@@ -37,7 +33,7 @@ export default function DashboardPage() {
         revenue: rev,
       });
     })();
-  });
+  }, []);
 
   const cards = [
     { label: "Total Dives", value: stats.logs, icon: BookOpen, color: "text-primary" },
@@ -47,6 +43,10 @@ export default function DashboardPage() {
     { label: "Avg Depth", value: `${stats.avgDepth}m`, icon: TrendingDown, color: "text-warning" },
     { label: "Revenue (Paid)", value: `$${stats.revenue}`, icon: DollarSign, color: "text-primary" },
   ];
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading dashboard...</div>;
+  }
 
   return (
     <div>
@@ -82,12 +82,6 @@ export default function DashboardPage() {
         <div className="col-span-2 p-4 border rounded">
           <h3 className="font-semibold mb-2">Revenue (last 30 days)</h3>
           <RevenueChart data={revenueSeries} />
-        </div>
-        <div className="p-4 border rounded">
-          <TopSelling items={topItems} />
-          <div className="mt-3">
-            <ExportButtons rows={topItems.map((i:any) => ({ item: i.item, quantity: i.quantity, revenue: i.revenue }))} title="Top Selling Items" />
-          </div>
         </div>
       </div>
     </div>
