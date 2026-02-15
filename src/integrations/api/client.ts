@@ -1,5 +1,10 @@
-// Simple API client for the local SQLite backend
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Simple API client for local and Netlify deployment
+// Locally uses Express server at localhost:3000
+// On Netlify uses /.netlify/functions/api
+
+const isBrowser = typeof window !== 'undefined';
+const isDevelopment = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const BASE_URL = isDevelopment ? (import.meta.env.VITE_API_URL || 'http://localhost:3000') : '';
 const userId = 'user-1'; // In production, get from auth
 
 export const apiClient = {
