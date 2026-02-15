@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, FileText, Download, Printer } from "lucide-react";
+import { Plus, Trash2, Edit2, FileText, Download, Printer, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,7 +21,9 @@ export default function BookingsPage() {
   const [stats, setStats] = useState({ booking_count: 0, total_revenue: 0, total_amount: 0 });
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [form, setForm] = useState({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "", size: "", weight: "", height: "", agent_id: "" });
   const { toast } = useToast();
 
@@ -91,6 +93,11 @@ export default function BookingsPage() {
       setForm({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "", size: "", weight: "", height: "", agent_id: "" });
     }
     setOpen(true);
+  };
+
+  const handleOpenView = (booking: any) => {
+    setViewingId(booking.id);
+    setViewOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -391,6 +398,80 @@ export default function BookingsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* View Booking Modal */}
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Booking Details</DialogTitle>
+            </DialogHeader>
+            {viewingId && bookings.find(b => b.id === viewingId) && (() => {
+              const b = bookings.find(b => b.id === viewingId)!;
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Invoice #</p>
+                      <p className="font-mono font-medium">{b.invoice_number || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Diver</p>
+                      <p className="font-medium">{b.divers?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Course</p>
+                      <p className="font-medium">{b.courses?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Accommodation</p>
+                      <p className="font-medium">{b.accommodations?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Check-in</p>
+                      <p className="font-medium">{b.check_in || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Check-out</p>
+                      <p className="font-medium">{b.check_out || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Size</p>
+                      <p className="font-medium">{b.size || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Weight</p>
+                      <p className="font-medium">{b.weight || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Height</p>
+                      <p className="font-medium">{b.height || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Agent</p>
+                      <p className="font-medium">{b.agent?.name || '—'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Notes</p>
+                      <p className="font-medium">{b.notes || '—'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Total Amount</p>
+                      <p className="text-xl font-bold">${b.total_amount.toFixed(2)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Payment Status</p>
+                      <Badge className="mt-1">{b.payment_status}</Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+                    <Button onClick={() => { setViewOpen(false); handleOpenForm(b); }}>Edit</Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
         </div>
       </div>
 
@@ -461,6 +542,9 @@ export default function BookingsPage() {
                           </Button>
                         </>
                       )}
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenView(b)} title="View Details">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenForm(b)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
