@@ -131,6 +131,10 @@ export default function BookingsPage() {
           total_amount: total,
           payment_status: form.payment_status,
           notes: form.notes || null,
+          size: form.size || null,
+          weight: form.weight || null,
+          height: form.height || null,
+          agent_id: form.agent_id || null,
         });
         toast({ title: "Success", description: "Booking updated successfully" });
       } else {
@@ -143,6 +147,10 @@ export default function BookingsPage() {
           check_out: form.check_out || null,
           total_amount: total,
           notes: form.notes || null,
+          size: form.size || null,
+          weight: form.weight || null,
+          height: form.height || null,
+          agent_id: form.agent_id || null,
         });
         bookingId = res.id;
         toast({ title: "Success", description: "Booking created successfully" });
