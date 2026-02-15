@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/integrations/api/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AccommodationsPage() {
@@ -25,13 +26,28 @@ export default function AccommodationsPage() {
 
   const handleSubmit = async () => {
     if (!form.name) return;
-    const { error } = await supabase.from("accommodations").insert({
-      name: form.name,
-      tier: form.tier as any,
-      price_per_night: Number(form.price_per_night) || 0,
-      description: form.description || null,
-    });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    // Prefer using server API in production (or when VITE_API_URL is set), otherwise use Supabase client
+    try {
+      const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const payload = {
+        name: form.name,
+        tier: form.tier,
+        price_per_night: Number(form.price_per_night) || 0,
+        description: form.description || null,
+      };
+
+      if (!isLocal) {
+        // Use backend API (Railway) which will persist to the server DB
+        await apiClient.accommodations.create(payload);
+      } else {
+        const { error } = await supabase.from("accommodations").insert(payload);
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      toast({ title: "Error", description: msg, variant: "destructive" });
+      return;
+    }
     setForm({ name: "", tier: "free_with_course", price_per_night: "0", description: "" });
     setOpen(false);
     load();
