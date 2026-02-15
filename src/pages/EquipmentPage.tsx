@@ -10,12 +10,14 @@ export default function EquipmentPage() {
   const [loading, setLoading] = useState(true);
   const [edits, setEdits] = useState<Record<string, any>>({});
   const [assignments, setAssignments] = useState<any[]>([]);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const data = await apiClient.equipment.list();
       setItems(Array.isArray(data) ? data : []);
+      console.log('Equipment loaded:', data);
     } catch (err) {
       console.error('Failed to load equipment', err);
       setItems([]);
@@ -51,21 +53,31 @@ export default function EquipmentPage() {
 
   const handleSave = async (id: string) => {
     const payload = edits[id];
-    if (!payload) return;
+    if (!payload || Object.keys(payload).length === 0) {
+      alert('No changes to save');
+      return;
+    }
+    setSavingId(id);
     try {
       // Merge edits with existing item to preserve all fields
       const existing = items.find(i => i.id === id);
       if (!existing) {
         alert('Item not found');
+        setSavingId(null);
         return;
       }
       const fullPayload = { ...existing, ...payload };
-      await apiClient.equipment.update(id, fullPayload);
+      console.log('Saving equipment with payload:', fullPayload);
+      const result = await apiClient.equipment.update(id, fullPayload);
+      console.log('Save result:', result);
       await load();
       setEdits((e) => { const c = { ...e }; delete c[id]; return c; });
+      alert('Equipment saved successfully');
     } catch (err) {
       console.error('Save failed', err);
-      alert('Failed to save changes');
+      alert(`Failed to save: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -200,7 +212,9 @@ export default function EquipmentPage() {
                   </td>
                   <td>
                     <div className="flex gap-2 justify-end">
-                      <Button size="sm" onClick={() => handleSave(it.id)}>Save</Button>
+                      <Button size="sm" onClick={() => handleSave(it.id)} disabled={savingId === it.id}>
+                        {savingId === it.id ? 'Saving...' : 'Save'}
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(it.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   </td>
