@@ -244,6 +244,43 @@ export default function EquipmentMaintenancePage() {
                         <div>
                           <h3 className="font-semibold">{it.name}</h3>
                           <p className="text-sm text-muted-foreground">{it.category} {it.sku && `• ${it.sku}`}</p>
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Name:</Label>
+                              <Input
+                                value={edits[it.id]?.name || it.name}
+                                onChange={(e) => handleEdit(it.id, 'name', e.target.value)}
+                                className="h-8 text-sm"
+                                placeholder="Equipment name"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Price:</Label>
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="number"
+                                  value={edits[it.id]?.price || it.price}
+                                  onChange={(e) => handleEdit(it.id, 'price', parseFloat(e.target.value))}
+                                  className="h-8 text-sm w-24"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Daily Rent:</Label>
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="number"
+                                  value={edits[it.id]?.rent_price_per_day || it.rent_price_per_day}
+                                  onChange={(e) => handleEdit(it.id, 'rent_price_per_day', parseFloat(e.target.value))}
+                                  className="h-8 text-sm w-24"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="flex items-center justify-between">
@@ -268,6 +305,15 @@ export default function EquipmentMaintenancePage() {
                         <div className="flex gap-2 pt-2">
                           <Button
                             size="sm"
+                            onClick={() => handleEdit(it.id, 'name', prompt('Edit name:', it.name))}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
                             onClick={() => handleCheckOut(it)}
                             disabled={getStatus(it) !== 'Available'}
                             className="flex-1"
@@ -275,11 +321,17 @@ export default function EquipmentMaintenancePage() {
                             Rent
                           </Button>
                           <Button
-                            variant="outline"
                             size="sm"
-                            onClick={() => alert('Schedule maintenance')}
+                            variant="destructive"
+                            onClick={() => {
+                              if (confirm(`Delete "${it.name}"? This action cannot be undone.`)) {
+                                handleDelete(it.id);
+                              }
+                            }}
+                            className="flex-1"
                           >
-                            <Wrench className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </div>
