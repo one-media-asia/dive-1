@@ -13,7 +13,6 @@ const mainLinks = [
   { to: "/boats", label: "Boats", icon: Ship },
   { to: "/courses", label: "Courses", icon: GraduationCap },
   { to: "/bookings", label: "Bookings & Invoices", icon: FileText },
-  { to: "/equipment", label: "Equipment", icon: ShoppingCart },
   { to: "/equipment-maintenance", label: "Equipment Rent-Maintenance", icon: Wrench },
   { to: "/wechat-integration", label: "WeChat Integration", icon: MessageCircle },
   { to: "/whatsapp-integration", label: "WhatsApp Integration", icon: Phone },

@@ -35,12 +35,12 @@ import CreateDiveTripPage from "@/pages/CreateDiveTripPage";
 import CreateSchedulePage from "@/pages/CreateSchedulePage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import ExpensesPage from "@/pages/ExpensesPage";
-import SuppliersPage from "@/pages/SuppliersPage";
-import PayrollPage from "@/pages/PayrollPage";
-import ReportsPage from "@/pages/ReportsPage";
-import AgentsPage from "@/pages/AgentsPage";
-import FinanceSettingsPage from "@/pages/FinanceSettingsPage";
 import POSPage from "@/pages/POSPage";
+import FinanceSettingsPage from "@/pages/FinanceSettingsPage";
+import AgentsPage from "@/pages/AgentsPage";
+import ReportsPage from "@/pages/ReportsPage";
+import PayrollPage from "@/pages/PayrollPage";
+import SuppliersPage from "@/pages/SuppliersPage";
 import EquipmentMaintenancePage from "@/pages/EquipmentMaintenancePage";
 import WeChatIntegrationPage from "@/pages/WeChatIntegrationPage";
 import WhatsAppIntegrationPage from "@/pages/WhatsAppIntegrationPage";
@@ -65,7 +65,6 @@ function ProtectedRoutes() {
         <Route path="/boats" element={<BoatsPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
-        <Route path="/equipment" element={<EquipmentPage />} />
         <Route path="/equipment-maintenance" element={<EquipmentMaintenancePage />} />
         <Route path="/wechat-integration" element={<WeChatIntegrationPage />} />
         <Route path="/whatsapp-integration" element={<WhatsAppIntegrationPage />} />
