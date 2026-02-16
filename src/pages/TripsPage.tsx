@@ -196,55 +196,31 @@ export default function TripsPage() {
                 {format(currentDate, 'MMMM yyyy')}
               </h2>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant={viewMode === 'week' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setViewMode('week')}
-              >
-                <List className="h-4 w-4 mr-2" />
-                Basic Week
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="default" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Dive Trip
               </Button>
-              <Button 
-                variant={viewMode === 'month' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setViewMode('month')}
-              >
+              <Button variant="outline" size="sm">
                 <CalendarIcon className="h-4 w-4 mr-2" />
-                Month
+                Trip Schedules
+              </Button>
+              <Button variant="outline" size="sm">
+                <FileText className="h-4 w-4 mr-2" />
+                Daily Summary
+              </Button>
+              <Button variant="outline" size="sm">
+                <Users className="h-4 w-4 mr-2" />
+                Dive Trips & Accommodation
+              </Button>
+              <Button variant="outline" size="sm">
+                <FileText className="h-4 w-4 mr-2" />
+                Reports
               </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
-
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2">
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add New Dive Trip
-        </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Trip Schedules
-        </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <CalendarIcon className="h-4 w-4" />
-          Daily Summary
-        </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <List className="h-4 w-4" />
-          Dive Trips List
-        </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Home className="h-4 w-4" />
-          Accommodation
-        </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Reports
-        </Button>
-      </div>
 
       {/* Calendar */}
       <Card>
@@ -489,11 +465,90 @@ export default function TripsPage() {
             <CardHeader>
               <CardTitle>WhatsApp Business Configuration</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p>Configure your WhatsApp Business API credentials and settings.</p>
-              <div className="mt-4">
-                <Button>Save Configuration</Button>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">WhatsApp Business API Settings</h4>
+                <p className="text-sm text-muted-foreground">
+                  Configure your WhatsApp Business API credentials
+                </p>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="phone-number-id" className="text-sm font-medium">Phone Number ID</label>
+                  <input 
+                    id="phone-number-id"
+                    type="text" 
+                    className="w-full p-2 border rounded-md"
+                    placeholder="1234567890"
+                    aria-label="Phone Number ID"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="whatsapp-business-id" className="text-sm font-medium">WhatsApp Business ID</label>
+                  <input 
+                    id="whatsapp-business-id"
+                    type="text" 
+                    className="w-full p-2 border rounded-md"
+                    placeholder="your-business@whatsapp"
+                    aria-label="WhatsApp Business ID"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="api-token" className="text-sm font-medium">API Token</label>
+                  <input 
+                    id="api-token"
+                    type="password" 
+                    className="w-full p-2 border rounded-md"
+                    placeholder="your_whatsapp_api_token"
+                    aria-label="WhatsApp API Token"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="webhook-url" className="text-sm font-medium">Webhook URL</label>
+                  <input 
+                    id="webhook-url"
+                    type="url" 
+                    className="w-full p-2 border rounded-md"
+                    value="https://your-domain.com/api/whatsapp/webhook"
+                    readOnly
+                    aria-label="Webhook URL for WhatsApp Business API"
+                    title="Webhook URL - This endpoint receives WhatsApp messages"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Message Templates</h4>
+                <p className="text-sm text-muted-foreground">
+                  Pre-approved templates for common responses
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 border rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">Welcome Message</span>
+                    <Badge variant="outline">Active</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    "Hello! 👋 Thank you for contacting our dive center. How can we help you today?"
+                  </p>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">Booking Confirmation</span>
+                    <Badge variant="outline">Active</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    "Great! 🎉 Your dive trip has been confirmed. We'll send you details shortly."
+                  </p>
+                </div>
+              </div>
+
+              <Button className="w-full">
+                Save WhatsApp Configuration
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
