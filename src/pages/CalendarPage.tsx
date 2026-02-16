@@ -14,11 +14,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useTrips } from '@/hooks/useTrips';
 import { useIncidents } from '@/hooks/useIncidents';
 import { apiClient } from '@/integrations/api/client';
 import { useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 interface CalendarEvent {
   id: string;
@@ -35,20 +46,42 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showCreateTripModal, setShowCreateTripModal] = useState(false);
+  const [diveSites, setDiveSites] = useState<any[]>([]);
+  const [boats, setBoats] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [tripForm, setTripForm] = useState({
+    name: '',
+    tripType: 'regular',
+    departureTime: new Date().toISOString().slice(0, 16),
+    diveSiteId: '',
+    boatId: '',
+    captainId: '',
+    numberOfDives: '1',
+  });
   const { trips } = useTrips();
   const { incidents } = useIncidents();
+  const { toast } = useToast();
 
   // Load bookings and courses
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [bookingsRes, coursesRes] = await Promise.all([
+        const [bookingsRes, coursesRes, diveSitesRes, boatsRes, instructorsRes] = await Promise.all([
           apiClient.bookings.list().catch(() => []),
           apiClient.courses.list().catch(() => []),
+          apiClient.diveSites.list().catch(() => []),
+          apiClient.boats.list().catch(() => []),
+          apiClient.instructors.list().catch(() => []),
         ]);
 
         const events: CalendarEvent[] = [];
+
+        // Store dive sites, boats, and instructors for the form
+        setDiveSites(Array.isArray(diveSitesRes) ? diveSitesRes : []);
+        setBoats(Array.isArray(boatsRes) ? boatsRes : []);
+        setInstructors(Array.isArray(instructorsRes) ? instructorsRes : []);
 
         // Add booking events - use check_in date
         if (bookingsRes && Array.isArray(bookingsRes)) {
@@ -147,11 +180,207 @@ export default function CalendarPage() {
     return eventsByDate.get(dateStr) || [];
   };
 
+  const handleCreateTrip = async () => {
+    if (!tripForm.name || !tripForm.departureTime || !tripForm.diveSiteId) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: tripForm.name,
+          type: tripForm.tripType,
+          start_at: tripForm.departureTime,
+          dive_site_id: tripForm.diveSiteId,
+          boat_id: tripForm.boatId || null,
+          captain_id: tripForm.captainId || null,
+          number_of_dives: parseInt(tripForm.numberOfDives),
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to create trip');
+
+      toast({
+        title: 'Success',
+        description: 'Dive trip created successfully',
+      });
+
+      setShowCreateTripModal(false);
+      setTripForm({
+        name: '',
+        tripType: 'regular',
+        departureTime: new Date().toISOString().slice(0, 16),
+        diveSiteId: '',
+        boatId: '',
+        captainId: '',
+        numberOfDives: '1',
+      });
+
+      // Reload events
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to create trip:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to create dive trip',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
-        <p className="text-muted-foreground">Bookings, courses, staff, and incidents</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+          <p className="text-muted-foreground">Bookings, courses, staff, and incidents</p>
+        </div>
+
+        {/* Create Dive Trip Button */}
+        <Dialog open={showCreateTripModal} onOpenChange={setShowCreateTripModal}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create Dive Trip
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create Dive Trip</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Trip Name */}
+              <div>
+                <Label htmlFor="name">Trip Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Tulamben Sunrise Dive"
+                  value={tripForm.name}
+                  onChange={(e) => setTripForm({ ...tripForm, name: e.target.value })}
+                />
+              </div>
+
+              {/* Trip Type */}
+              <div>
+                <Label>Trip Type *</Label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="regular"
+                      checked={tripForm.tripType === 'regular'}
+                      onChange={(e) => setTripForm({ ...tripForm, tripType: e.target.value })}
+                    />
+                    Regular
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="multi-day"
+                      checked={tripForm.tripType === 'multi-day'}
+                      onChange={(e) => setTripForm({ ...tripForm, tripType: e.target.value })}
+                    />
+                    Multi Day (Liveaboard)
+                  </label>
+                </div>
+              </div>
+
+              {/* Departure Time */}
+              <div>
+                <Label htmlFor="departure-time">Departure Time *</Label>
+                <Input
+                  id="departure-time"
+                  type="datetime-local"
+                  value={tripForm.departureTime}
+                  onChange={(e) => setTripForm({ ...tripForm, departureTime: e.target.value })}
+                />
+              </div>
+
+              {/* Departure Location (Dive Site) */}
+              <div>
+                <Label htmlFor="dive-site">Departure Location (Dive Site) *</Label>
+                <Select value={tripForm.diveSiteId} onValueChange={(value) => setTripForm({ ...tripForm, diveSiteId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a dive site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {diveSites.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name || 'Unnamed Site'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Boat Selection */}
+              <div>
+                <Label htmlFor="boat">Boat</Label>
+                <Select value={tripForm.boatId} onValueChange={(value) => setTripForm({ ...tripForm, boatId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No Boat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Boat</SelectItem>
+                    {boats.map((boat: any) => (
+                      <SelectItem key={boat.id} value={boat.id}>
+                        {boat.name || 'Unnamed Boat'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Captain Selection */}
+              <div>
+                <Label htmlFor="captain">Captain</Label>
+                <Select value={tripForm.captainId} onValueChange={(value) => setTripForm({ ...tripForm, captainId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a captain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Please select</SelectItem>
+                    {instructors.map((instructor: any) => (
+                      <SelectItem key={instructor.id} value={instructor.id}>
+                        {instructor.name || 'Unnamed Instructor'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Number of Dives */}
+              <div>
+                <Label htmlFor="num-dives">Number of Dives</Label>
+                <Input
+                  id="num-dives"
+                  type="number"
+                  min="1"
+                  value={tripForm.numberOfDives}
+                  onChange={(e) => setTripForm({ ...tripForm, numberOfDives: e.target.value })}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end pt-4">
+                <Button variant="outline" onClick={() => setShowCreateTripModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateTrip}>
+                  Create Trip
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {loading && (
