@@ -531,7 +531,7 @@ export default function TripsPage() {
                     <span className="font-medium">Welcome Message</span>
                     <Badge variant="outline">Active</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2">
                     "Hello! 👋 Thank you for contacting our dive center. How can we help you today?"
                   </p>
                 </div>
@@ -540,9 +540,113 @@ export default function TripsPage() {
                     <span className="font-medium">Booking Confirmation</span>
                     <Badge variant="outline">Active</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2">
                     "Great! 🎉 Your dive trip has been confirmed. We'll send you details shortly."
                   </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Welcome Instructions</h4>
+                <p className="text-sm text-muted-foreground">
+                  Set up automated welcome messages and instructions for new divers
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg bg-blue-50">
+                  <h5 className="font-medium mb-2">New Diver Welcome Sequence</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold">1.</span>
+                      <div>
+                        <strong>Initial Welcome:</strong> Send welcome message immediately
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold">2.</span>
+                      <div>
+                        <strong>Instructions:</strong> Send dive center information and safety guidelines
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold">3.</span>
+                      <div>
+                        <strong>Next Steps:</strong> Guide them through booking process
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="welcome-title" className="text-sm font-medium">Welcome Title</label>
+                    <input 
+                      id="welcome-title"
+                      type="text" 
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Welcome to ONE MEDIA ASIA Diving!"
+                      defaultValue="Welcome to ONE MEDIA ASIA Diving!"
+                      aria-label="Welcome message title"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="welcome-delay" className="text-sm font-medium">Send After (minutes)</label>
+                    <input 
+                      id="welcome-delay"
+                      type="number" 
+                      className="w-full p-2 border rounded-md"
+                      placeholder="5"
+                      defaultValue="5"
+                      aria-label="Delay before sending welcome message"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="welcome-instructions" className="text-sm font-medium">Welcome Instructions</label>
+                  <textarea 
+                    id="welcome-instructions"
+                    className="w-full p-2 border rounded-md h-32"
+                    placeholder="Enter your welcome instructions for new divers..."
+                    defaultValue="Welcome to ONE MEDIA ASIA Diving! 🤿
+
+We're excited to help you explore the underwater world. Here's what you need to know:
+
+📍 Location: Our dive center is located at [Address]
+⏰ Hours: [Operating Hours]
+📞 Emergency: [Emergency Contact]
+
+What to bring:
+• Swimsuit and towel
+• Sunscreen
+• Water bottle
+• Certification card (if certified)
+
+Next steps:
+1. Choose your dive trip
+2. Complete medical form
+3. Confirm booking
+4. Get ready for adventure!
+
+Reply 'BOOK' to see available trips or 'HELP' for more information."
+                    aria-label="Welcome instructions for new divers"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" defaultChecked />
+                    <span className="text-sm">Enable welcome sequence</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" defaultChecked />
+                    <span className="text-sm">Send safety guidelines</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" />
+                    <span className="text-sm">Include promotional offers</span>
+                  </label>
                 </div>
               </div>
 
