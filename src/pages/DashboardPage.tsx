@@ -61,7 +61,7 @@ export default function DashboardPage() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/divers')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -73,7 +73,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/forms-elearning')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4" />
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/divers')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
@@ -99,7 +99,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/divers?filter=pending')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
@@ -177,11 +177,20 @@ export default function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button onClick={() => navigate('/divers')} variant="outline" className="w-full justify-start">
+            <Button onClick={() => navigate('/divers?action=add')} variant="outline" className="w-full justify-start">
               Add New Diver
             </Button>
-            <Button onClick={() => navigate('/bookings')} variant="outline" className="w-full justify-start">
+            <Button onClick={() => navigate('/bookings?action=create')} variant="outline" className="w-full justify-start">
               Create Booking
+            </Button>
+            <Button onClick={() => navigate('/trips')} variant="outline" className="w-full justify-start">
+              View Trip Calendar
+            </Button>
+            <Button onClick={() => navigate('/forms-elearning')} variant="outline" className="w-full justify-start">
+              Forms & E-learning
+            </Button>
+            <Button onClick={() => navigate('/equipment-maintenance')} variant="outline" className="w-full justify-start">
+              Equipment Management
             </Button>
           </CardContent>
         </Card>
@@ -194,29 +203,47 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <ol className="space-y-3 text-sm">
-            <li className="flex gap-3">
+            <li 
+              className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+              onClick={() => navigate('/divers?action=add')}
+            >
               <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white ${stats.totalDivers > 0 ? 'bg-success' : 'bg-muted-foreground'}`}>
                 {stats.totalDivers > 0 ? '✓' : '1'}
               </span>
-              <span className="text-muted-foreground">
-                Add divers and their information to the system
-              </span>
+              <div>
+                <span className="text-muted-foreground">
+                  Add divers and their information to system
+                </span>
+                <div className="text-xs text-primary mt-1">Click to add diver →</div>
+              </div>
             </li>
-            <li className="flex gap-3">
+            <li 
+              className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+              onClick={() => navigate('/forms-elearning')}
+            >
               <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white ${stats.medicalCleared > 0 ? 'bg-success' : 'bg-muted-foreground'}`}>
                 {stats.medicalCleared > 0 ? '✓' : '2'}
               </span>
-              <span className="text-muted-foreground">
-                Verify medical clearance and download PADI medical forms
-              </span>
+              <div>
+                <span className="text-muted-foreground">
+                  Verify medical clearance and download PADI medical forms
+                </span>
+                <div className="text-xs text-primary mt-1">Click to view forms →</div>
+              </div>
             </li>
-            <li className="flex gap-3">
+            <li 
+              className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+              onClick={() => navigate('/divers')}
+            >
               <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white ${stats.onboardingCompleted > 0 ? 'bg-success' : 'bg-muted-foreground'}`}>
                 {stats.onboardingCompleted > 0 ? '✓' : '3'}
               </span>
-              <span className="text-muted-foreground">
-                Complete onboarding for each diver
-              </span>
+              <div>
+                <span className="text-muted-foreground">
+                  Complete onboarding for each diver
+                </span>
+                <div className="text-xs text-primary mt-1">Click to manage onboarding →</div>
+              </div>
             </li>
           </ol>
         </CardContent>

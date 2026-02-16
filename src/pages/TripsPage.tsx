@@ -15,7 +15,7 @@ import {
   FileText,
   UserCheck
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
 
 interface DiveTrip {
   id: string;
@@ -146,11 +146,19 @@ export default function TripsPage() {
               </h2>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant={viewMode === 'week' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setViewMode('week')}
+              >
                 <List className="h-4 w-4 mr-2" />
                 Basic Week
               </Button>
-              <Button variant="default" size="sm">
+              <Button 
+                variant={viewMode === 'month' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setViewMode('month')}
+              >
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 Month
               </Button>
@@ -190,41 +198,72 @@ export default function TripsPage() {
       {/* Calendar */}
       <Card>
         <CardContent className="p-0">
-          <div className="grid grid-cols-7 gap-0">
-            {/* Weekday headers */}
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-b border-r">
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {(() => {
-              const monthStart = startOfMonth(currentDate);
-              const monthEnd = endOfMonth(currentDate);
-              const calendarStart = new Date(monthStart);
-              calendarStart.setDate(calendarStart.getDate() - (calendarStart.getDay() || 7) + 1);
-              
-              const days = [];
-              const currentDay = new Date(calendarStart);
-              
-              for (let i = 0; i < 42; i++) {
-                days.push(new Date(currentDay));
-                currentDay.setDate(currentDay.getDate() + 1);
-              }
-              
-              return days.map((day, index) => (
-                <div 
-                  key={index} 
-                  className={`min-h-[80px] border-b border-r p-1 ${
-                    !isSameMonth(day, currentDate) ? 'bg-muted/30' : ''
-                  } ${isSameDay(day, new Date(2026, 1, 16)) ? 'bg-blue-50' : ''}`}
-                >
-                  {renderDay(day)}
+          {viewMode === 'month' ? (
+            // Month View
+            <div className="grid grid-cols-7 gap-0">
+              {/* Weekday headers */}
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-b border-r">
+                  {day}
                 </div>
-              ));
-            })()}
-          </div>
+              ))}
+              
+              {/* Calendar days */}
+              {(() => {
+                const monthStart = startOfMonth(currentDate);
+                const monthEnd = endOfMonth(currentDate);
+                const calendarStart = new Date(monthStart);
+                calendarStart.setDate(calendarStart.getDate() - (calendarStart.getDay() || 7) + 1);
+                
+                const days = [];
+                const currentDay = new Date(calendarStart);
+                
+                for (let i = 0; i < 42; i++) {
+                  days.push(new Date(currentDay));
+                  currentDay.setDate(currentDay.getDate() + 1);
+                }
+                
+                return days.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`min-h-[80px] border-b border-r p-1 ${
+                      !isSameMonth(day, currentDate) ? 'bg-muted/30' : ''
+                    } ${isSameDay(day, new Date(2026, 1, 16)) ? 'bg-blue-50' : ''}`}
+                  >
+                    {renderDay(day)}
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : (
+            // Week View
+            <div className="grid grid-cols-7 gap-0">
+              {/* Weekday headers */}
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-b border-r">
+                  {day}
+                </div>
+              ))}
+              
+              {/* Week days */}
+              {(() => {
+                const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+                const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+                
+                return weekDays.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`min-h-[120px] border-b border-r p-1 ${
+                      isSameDay(day, new Date()) ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    {renderDay(day)}
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
         </CardContent>
       </Card>
 

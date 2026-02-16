@@ -110,9 +110,10 @@ export default function AppSidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="flex items-center justify-between text-xs text-sidebar-foreground/60">
-          <span>DiveAdmin v2.0</span>
-          <Badge variant="secondary" className="text-xs">PRO</Badge>
+        <div className="text-xs text-sidebar-foreground/60 text-center">
+          <div>Asia Booking for dive pros V.2.0</div>
+          <div className="mt-1">Copyright PETER GREANEY</div>
+          <div>@ ONEMEDIA.ASIA</div>
         </div>
       </div>
     </aside>
