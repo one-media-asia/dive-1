@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Anchor, LayoutDashboard, BookOpen, Users, MapPin, GraduationCap, Ship, UserCheck, FileText, AlertTriangle, Home, LogOut, ShoppingCart, Calendar, DollarSign, ChevronDown, FileCheck, CreditCard, Truck, Users2, BarChart3, Briefcase, Settings } from "lucide-react";
+import { Anchor, LayoutDashboard, BookOpen, Users, MapPin, GraduationCap, Ship, UserCheck, FileText, AlertTriangle, Home, LogOut, ShoppingCart, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -21,21 +20,9 @@ const mainLinks = [
   { to: "/emergency", label: "Emergency", icon: AlertTriangle },
 ];
 
-const financeLinks = [
-  { to: "/pos", label: "POS", icon: DollarSign },
-  { to: "/finance", label: "Finance Dashboard", icon: DollarSign },
-  { to: "/invoices", label: "Invoices", icon: FileCheck },
-  { to: "/expenses", label: "Expenses", icon: CreditCard },
-  { to: "/suppliers", label: "Suppliers", icon: Truck },
-  { to: "/payroll", label: "Payroll", icon: Users2 },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/agents", label: "Agents", icon: Briefcase },
-  { to: "/finance-settings", label: "Settings", icon: Settings },
-];
 
 export default function AppSidebar() {
   const { signOut } = useAuth();
-  const [financeOpen, setFinanceOpen] = useState(false);
 
   return (
     <aside className="w-64 min-h-screen bg-sidebar flex flex-col border-r border-sidebar-border">
@@ -62,41 +49,6 @@ export default function AppSidebar() {
           </NavLink>
         ))}
 
-        {/* Finance Menu */}
-        <div className="pt-2">
-          <button
-            onClick={() => setFinanceOpen(!financeOpen)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <DollarSign className="h-4 w-4" />
-            <span>Finance Menu</span>
-            <ChevronDown
-              className={`h-4 w-4 ml-auto transition-transform ${financeOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {financeOpen && (
-            <div className="pl-6 space-y-1 mt-1">
-              {financeLinks.map(({ to, label, icon: Icon }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === "/finance"}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }`
-                  }
-                >
-                  <Icon className="h-3 w-3" />
-                  {label}
-                </NavLink>
-              ))}
-            </div>
-          )}
-        </div>
       </nav>
       <div className="p-4 border-t border-sidebar-border">
         <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground/60" onClick={signOut}>
