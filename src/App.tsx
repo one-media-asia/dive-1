@@ -42,6 +42,7 @@ import AgentsPage from "@/pages/AgentsPage";
 import FinanceSettingsPage from "@/pages/FinanceSettingsPage";
 import POSPage from "@/pages/POSPage";
 import EquipmentMaintenancePage from "@/pages/EquipmentMaintenancePage";
+import WeChatIntegrationPage from "@/pages/WeChatIntegrationPage";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ function ProtectedRoutes() {
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/equipment" element={<EquipmentPage />} />
         <Route path="/equipment-maintenance" element={<EquipmentMaintenancePage />} />
+        <Route path="/wechat-integration" element={<WeChatIntegrationPage />} />
         {/* POS removed — inventory remains at /inventory */}
         <Route path="/trips" element={<TripsPage />} />
         <Route path="/trips/:id" element={<TripBooking />} />
