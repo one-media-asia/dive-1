@@ -22,6 +22,7 @@ const mainLinks = [
 ];
 
 const financeLinks = [
+  { to: "/pos", label: "POS", icon: DollarSign },
   { to: "/finance", label: "Finance Dashboard", icon: DollarSign },
   { to: "/invoices", label: "Invoices", icon: FileCheck },
   { to: "/expenses", label: "Expenses", icon: CreditCard },

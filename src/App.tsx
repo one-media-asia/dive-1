@@ -40,6 +40,7 @@ import PayrollPage from "@/pages/PayrollPage";
 import ReportsPage from "@/pages/ReportsPage";
 import AgentsPage from "@/pages/AgentsPage";
 import FinanceSettingsPage from "@/pages/FinanceSettingsPage";
+import POSPage from "@/pages/POSPage";
 // POSPage removed
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ function ProtectedRoutes() {
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/pos" element={<POSPage />} />
         <Route path="/suppliers" element={<SuppliersPage />} />
         <Route path="/payroll" element={<PayrollPage />} />
         <Route path="/reports" element={<ReportsPage />} />
