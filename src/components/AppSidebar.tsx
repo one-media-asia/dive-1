@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Anchor, LayoutDashboard, BookOpen, Users, MapPin, GraduationCap, Ship, UserCheck, FileText, AlertTriangle, Home, LogOut, ShoppingCart, Calendar, Wrench, MessageCircle, Phone, Download, User, Settings, HelpCircle } from "lucide-react";
+import { Anchor, LayoutDashboard, BookOpen, Users, MapPin, GraduationCap, Ship, UserCheck, FileText, AlertTriangle, Home, LogOut, ShoppingCart, Calendar, Wrench, Download, User, Settings, HelpCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,9 +37,7 @@ const mainLinks = [
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/groups", label: "Groups", icon: UserCheck },
   { to: "/emergency", label: "Emergency", icon: AlertTriangle },
-  { to: "/wechat-integration", label: "WeChat", icon: MessageCircle },
-  { to: "/whatsapp-integration", label: "WhatsApp", icon: Phone },
-];
+  ];
 
 
 export default function AppSidebar() {
