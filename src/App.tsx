@@ -28,7 +28,20 @@ import HiraPage from "@/pages/HiraPage";
 import IncidentsPage from "@/pages/IncidentsPage";
 import DebugPage from "@/pages/DebugPage";
 import GroupsPage from "@/pages/GroupsPage";
-// POSPage removed
+import CalendarPage from "@/pages/CalendarPage";
+import FinancePage from "@/pages/FinancePage";
+import CreateDiveTripPage from "@/pages/CreateDiveTripPage";
+import CreateSchedulePage from "@/pages/CreateSchedulePage";
+import InvoicesPage from "@/pages/InvoicesPage";
+import ExpensesPage from "@/pages/ExpensesPage";
+import POSPage from "@/pages/POSPage";
+import FinanceSettingsPage from "@/pages/FinanceSettingsPage";
+import AgentsPage from "@/pages/AgentsPage";
+import ReportsPage from "@/pages/ReportsPage";
+import PayrollPage from "@/pages/PayrollPage";
+import SuppliersPage from "@/pages/SuppliersPage";
+import EquipmentMaintenancePage from "@/pages/EquipmentMaintenancePage";
+import FormsElearningPage from "@/pages/FormsElearningPage";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +63,8 @@ function ProtectedRoutes() {
         <Route path="/boats" element={<BoatsPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/equipment-maintenance" element={<EquipmentMaintenancePage />} />
+                        <Route path="/forms-elearning" element={<FormsElearningPage />} />
         {/* POS removed — inventory remains at /inventory */}
         <Route path="/trips" element={<TripsPage />} />
         <Route path="/trips/:id" element={<TripBooking />} />
@@ -60,6 +75,18 @@ function ProtectedRoutes() {
         <Route path="/hira" element={<HiraPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/groups" element={<GroupsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/create-dive-trip" element={<CreateDiveTripPage />} />
+        <Route path="/create-schedule" element={<CreateSchedulePage />} />
+        <Route path="/finance" element={<FinancePage />} />
+        <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/pos" element={<POSPage />} />
+        <Route path="/suppliers" element={<SuppliersPage />} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/agents" element={<AgentsPage />} />
+        <Route path="/finance-settings" element={<FinanceSettingsPage />} />
         <Route path="/emergency" element={<EmergencyPage />} />
         <Route path="/accommodations" element={<AccommodationsPage />} />
         <Route path="*" element={<NotFound />} />

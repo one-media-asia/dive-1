@@ -25,6 +25,7 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+
 // GET /api/groups - list all groups with leader and members
 app.get('/api/groups', (req, res) => {
   const db = getDb();
@@ -452,16 +453,19 @@ app.get('/api/bookings', (req, res) => {
   db.all(`
     SELECT 
       b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
+      b.size, b.weight, b.height, b.agent_id,
       b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at,
       d.name as diver_name,
       c.name as course_name, c.price as course_price,
       g.name as group_name, g.days as group_days,
-      a.name as accommodation_name, a.price_per_night, a.tier
+      a.name as accommodation_name, a.price_per_night, a.tier,
+      i.id as agent_id, i.name as agent_name
     FROM bookings b
     LEFT JOIN divers d ON b.diver_id = d.id
     LEFT JOIN courses c ON b.course_id = c.id
     LEFT JOIN groups g ON b.group_id = g.id
     LEFT JOIN accommodations a ON b.accommodation_id = a.id
+    LEFT JOIN instructors i ON b.agent_id = i.id
     ORDER BY b.created_at DESC
   `, (err, bookings) => {
     db.close();
@@ -484,6 +488,11 @@ app.get('/api/bookings', (req, res) => {
       courses: { name: b.course_name, price: b.course_price },
       groups: { name: b.group_name, days: b.group_days },
       accommodations: { name: b.accommodation_name, price_per_night: b.price_per_night, tier: b.tier }
+      ,
+      size: b.size,
+      weight: b.weight,
+      height: b.height,
+      agent: b.agent_id ? { id: b.agent_id, name: b.agent_name } : null
     }));
     res.json(result);
   });
@@ -514,7 +523,7 @@ app.get('/api/bookings/stats/last30days', (req, res) => {
 
 // POST /api/bookings - create a booking
 app.post('/api/bookings', (req, res) => {
-  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, notes } = req.body;
+  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, size, weight, height, agent_id, total_amount, notes } = req.body;
   const id = uuidv4();
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
@@ -524,9 +533,9 @@ app.post('/api/bookings', (req, res) => {
 
   const db = getDb();
   db.run(
-    `INSERT INTO bookings (id, diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, invoice_number, payment_status, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?)`,
-    [id, diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, invoiceNumber, notes || null],
+    `INSERT INTO bookings (id, diver_id, course_id, group_id, accommodation_id, check_in, check_out, size, weight, height, agent_id, total_amount, invoice_number, payment_status, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?)`,
+    [id, diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, size || null, weight || null, height || null, agent_id || null, total_amount || 0, invoiceNumber, notes || null],
     (err) => {
       if (err) {
         db.close();
@@ -536,16 +545,19 @@ app.post('/api/bookings', (req, res) => {
       db.get(`
         SELECT 
           b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
+          b.size, b.weight, b.height, b.agent_id,
           b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at,
           d.name as diver_name,
           c.name as course_name, c.price as course_price,
           g.name as group_name, g.days as group_days,
-          a.name as accommodation_name, a.price_per_night, a.tier
+          a.name as accommodation_name, a.price_per_night, a.tier,
+          i.id as agent_id, i.name as agent_name
         FROM bookings b
         LEFT JOIN divers d ON b.diver_id = d.id
         LEFT JOIN courses c ON b.course_id = c.id
         LEFT JOIN groups g ON b.group_id = g.id
         LEFT JOIN accommodations a ON b.accommodation_id = a.id
+        LEFT JOIN instructors i ON b.agent_id = i.id
         WHERE b.id = ?
       `, [id], (err, booking) => {
         db.close();
@@ -558,6 +570,10 @@ app.post('/api/bookings', (req, res) => {
           accommodation_id: booking.accommodation_id,
           check_in: booking.check_in,
           check_out: booking.check_out,
+          size: booking.size,
+          weight: booking.weight,
+          height: booking.height,
+          agent_id: booking.agent_id,
           total_amount: booking.total_amount,
           invoice_number: booking.invoice_number,
           payment_status: booking.payment_status,
@@ -566,7 +582,8 @@ app.post('/api/bookings', (req, res) => {
           divers: { name: booking.diver_name },
           courses: { name: booking.course_name, price: booking.course_price },
           groups: { name: booking.group_name, days: booking.group_days },
-          accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier }
+          accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier },
+          agent: booking.agent_id ? { id: booking.agent_id, name: booking.agent_name } : null
         });
       });
     }
@@ -642,7 +659,7 @@ app.delete('/api/divers/:id', (req, res) => {
 // PUT /api/bookings/:id - update a booking
 app.put('/api/bookings/:id', (req, res) => {
   const { id } = req.params;
-  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, total_amount, payment_status, notes } = req.body;
+  const { diver_id, course_id, group_id, accommodation_id, check_in, check_out, size, weight, height, agent_id, total_amount, payment_status, notes } = req.body;
 
   if (!diver_id) {
     return res.status(400).json({ error: 'diver_id is required' });
@@ -650,9 +667,9 @@ app.put('/api/bookings/:id', (req, res) => {
 
   const db = getDb();
   db.run(
-    `UPDATE bookings SET diver_id = ?, course_id = ?, group_id = ?, accommodation_id = ?, check_in = ?, check_out = ?, total_amount = ?, payment_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+    `UPDATE bookings SET diver_id = ?, course_id = ?, group_id = ?, accommodation_id = ?, check_in = ?, check_out = ?, size = ?, weight = ?, height = ?, agent_id = ?, total_amount = ?, payment_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, total_amount || 0, payment_status || 'unpaid', notes || null, id],
+    [diver_id, course_id || null, group_id || null, accommodation_id || null, check_in || null, check_out || null, size || null, weight || null, height || null, agent_id || null, total_amount || 0, payment_status || 'unpaid', notes || null, id],
     (err) => {
       if (err) {
         db.close();
@@ -662,16 +679,19 @@ app.put('/api/bookings/:id', (req, res) => {
       db.get(`
         SELECT 
           b.id, b.diver_id, b.course_id, b.group_id, b.accommodation_id, b.check_in, b.check_out,
+          b.size, b.weight, b.height, b.agent_id,
           b.total_amount, b.invoice_number, b.payment_status, b.notes, b.created_at, b.updated_at,
           d.name as diver_name,
           c.name as course_name, c.price as course_price,
           g.name as group_name, g.days as group_days,
-          a.name as accommodation_name, a.price_per_night, a.tier
+          a.name as accommodation_name, a.price_per_night, a.tier,
+          i.id as agent_id, i.name as agent_name
         FROM bookings b
         LEFT JOIN divers d ON b.diver_id = d.id
         LEFT JOIN courses c ON b.course_id = c.id
         LEFT JOIN groups g ON b.group_id = g.id
         LEFT JOIN accommodations a ON b.accommodation_id = a.id
+        LEFT JOIN instructors i ON b.agent_id = i.id
         WHERE b.id = ?
       `, [id], (err, booking) => {
         db.close();
@@ -684,6 +704,10 @@ app.put('/api/bookings/:id', (req, res) => {
           accommodation_id: booking.accommodation_id,
           check_in: booking.check_in,
           check_out: booking.check_out,
+          size: booking.size,
+          weight: booking.weight,
+          height: booking.height,
+          agent_id: booking.agent_id,
           total_amount: booking.total_amount,
           invoice_number: booking.invoice_number,
           payment_status: booking.payment_status,
@@ -693,7 +717,8 @@ app.put('/api/bookings/:id', (req, res) => {
           divers: { name: booking.diver_name },
           courses: { name: booking.course_name, price: booking.course_price },
           groups: { name: booking.group_name, days: booking.group_days },
-          accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier }
+          accommodations: { name: booking.accommodation_name, price_per_night: booking.price_per_night, tier: booking.tier },
+          agent: booking.agent_id ? { id: booking.agent_id, name: booking.agent_name } : null
         });
       });
     }
@@ -1344,6 +1369,204 @@ app.delete('/api/rental-assignments/:id', (req, res) => {
     db.close();
     if (err) return res.status(500).json({ error: err.message });
     res.json({ ok: true });
+  });
+});
+
+// GET /api/finance/summary - get comprehensive financial summary
+app.get('/api/finance/summary', (req, res) => {
+  const { startDate, endDate } = req.query;
+  const db = getDb();
+
+  if (!startDate || !endDate) {
+    db.close();
+    return res.status(400).json({ error: 'startDate and endDate are required' });
+  }
+
+  // Get transaction totals
+  db.all(`
+    SELECT 
+      COUNT(DISTINCT t.id) as total_transactions,
+      SUM(t.total) as total_revenue,
+      SUM(t.tax) as total_tax,
+      SUM(t.discount) as total_discount,
+      p.payment_method,
+      COUNT(DISTINCT p.id) as payment_count,
+      SUM(p.amount) as payment_amount
+    FROM transactions t
+    LEFT JOIN payments p ON t.id = p.transaction_id
+    WHERE DATE(t.created_at) BETWEEN ? AND ?
+    GROUP BY p.payment_method
+  `, [startDate, endDate], (err, paymentData) => {
+    if (err) {
+      db.close();
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Get daily revenue
+    db.all(`
+      SELECT 
+        DATE(t.created_at) as date,
+        SUM(t.total) as amount,
+        COUNT(DISTINCT t.id) as count
+      FROM transactions t
+      WHERE DATE(t.created_at) BETWEEN ? AND ?
+      GROUP BY DATE(t.created_at)
+      ORDER BY date DESC
+    `, [startDate, endDate], (err, dailyRevenue) => {
+      if (err) {
+        db.close();
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Get top selling equipment
+      db.all(`
+        SELECT 
+          e.name,
+          SUM(ti.quantity) as quantity,
+          SUM(ti.subtotal) as revenue
+        FROM transaction_items ti
+        JOIN equipment e ON ti.equipment_id = e.id
+        JOIN transactions t ON ti.transaction_id = t.id
+        WHERE DATE(t.created_at) BETWEEN ? AND ?
+        GROUP BY e.id
+        ORDER BY SUM(ti.subtotal) DESC
+        LIMIT 10
+      `, [startDate, endDate], (err, topEquipment) => {
+        if (err) {
+          db.close();
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Get inventory valuation
+        db.all(`
+          SELECT 
+            SUM(e.quantity_in_stock * e.price) as inventory_value,
+            SUM(e.quantity_in_stock) as total_items
+          FROM equipment e
+          WHERE deleted_at IS NULL
+        `, (err, inventoryData) => {
+          db.close();
+          if (err) return res.status(500).json({ error: err.message });
+
+          // Calculate aggregates
+          const paymentMethods = {};
+          const paymentMethodCounts = {};
+          let totalRevenue = 0;
+          let totalTransactions = 0;
+          let totalTax = 0;
+          let totalDiscount = 0;
+
+          paymentData.forEach(row => {
+            if (row.payment_method) {
+              paymentMethods[row.payment_method] = (paymentMethods[row.payment_method] || 0) + (row.payment_amount || 0);
+              paymentMethodCounts[row.payment_method] = (paymentMethodCounts[row.payment_method] || 0) + (row.payment_count || 0);
+            }
+            totalRevenue += row.total_revenue || 0;
+            totalTransactions += row.total_transactions || 0;
+            totalTax += row.total_tax || 0;
+            totalDiscount += row.total_discount || 0;
+          });
+
+          const summary = {
+            totalRevenue: totalRevenue || 0,
+            totalTransactions: totalTransactions || 0,
+            averageTransactionValue: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+            totalTax: totalTax || 0,
+            totalDiscount: totalDiscount || 0,
+            paymentMethods: paymentMethods,
+            paymentMethodCounts: paymentMethodCounts,
+            dailyRevenue: dailyRevenue || [],
+            topEquipment: topEquipment || [],
+            equipmentInventoryValue: inventoryData[0]?.inventory_value || 0,
+            equipmentCost: inventoryData[0]?.inventory_value || 0,
+          };
+
+          res.json(summary);
+        });
+      });
+    });
+  });
+});
+
+// GET /api/finance/export - export financial data
+app.get('/api/finance/export', (req, res) => {
+  const { startDate, endDate, format } = req.query;
+  const db = getDb();
+
+  if (!startDate || !endDate || !format) {
+    db.close();
+    return res.status(400).json({ error: 'startDate, endDate, and format are required' });
+  }
+
+  // Get transaction data
+  db.all(`
+    SELECT 
+      t.transaction_number,
+      t.type,
+      t.subtotal,
+      t.tax,
+      t.discount,
+      t.total,
+      t.created_at,
+      p.payment_method,
+      p.amount as paid_amount,
+      d.name as diver_name,
+      COUNT(ti.id) as item_count
+    FROM transactions t
+    LEFT JOIN payments p ON t.id = p.transaction_id
+    LEFT JOIN divers d ON t.diver_id = d.id
+    LEFT JOIN transaction_items ti ON t.id = ti.transaction_id
+    WHERE DATE(t.created_at) BETWEEN ? AND ?
+    GROUP BY t.id
+    ORDER BY t.created_at DESC
+  `, [startDate, endDate], (err, transactions) => {
+    if (err) {
+      db.close();
+      return res.status(500).json({ error: err.message });
+    }
+
+    db.close();
+
+    // Convert to CSV
+    if (format === 'csv') {
+      const headers = ['Transaction #', 'Date', 'Diver', 'Subtotal', 'Tax', 'Discount', 'Total', 'Payment Method', 'Amount Paid', 'Items'];
+      const rows = transactions.map(t => [
+        t.transaction_number || '',
+        t.created_at || '',
+        t.diver_name || 'Walk-in',
+        t.subtotal || 0,
+        t.tax || 0,
+        t.discount || 0,
+        t.total || 0,
+        t.payment_method || 'N/A',
+        t.paid_amount || 0,
+        t.item_count || 0,
+      ]);
+
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="financial-report-${startDate}-${endDate}.csv"`);
+      res.send(csv);
+    } else if (format === 'excel') {
+      // For Excel, we'll send a structured JSON that can be parsed on frontend
+      res.json({
+        format: 'excel',
+        data: transactions,
+        startDate,
+        endDate,
+      });
+    } else if (format === 'pdf') {
+      // For PDF, send data that can be rendered on frontend
+      res.json({
+        format: 'pdf',
+        data: transactions,
+        startDate,
+        endDate,
+        title: 'Financial Report',
+      });
+    } else {
+      res.status(400).json({ error: 'Invalid format' });
+    }
   });
 });
 

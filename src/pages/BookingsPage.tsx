@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, FileText, Download, Printer, X } from "lucide-react";
+import { Plus, Trash2, Edit2, FileText, Download, Printer, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,35 +10,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/integrations/api/client";
 import { generateInvoicePDF, printInvoice } from "@/utils/invoiceGenerator";
-import { equipment, rentalAssignments } from "@/hooks/usePOS";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [divers, setDivers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
   const [accommodations, setAccommodations] = useState<any[]>([]);
-  const [equipmentList, setEquipmentList] = useState<any[]>([]);
   const [stats, setStats] = useState({ booking_count: 0, total_revenue: 0, total_amount: 0 });
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
-  const [selectedEquipment, setSelectedEquipment] = useState<Array<{ equipment_id: string; quantity: number }>>([]);
-  const [rentalAssignmentsList, setRentalAssignmentsList] = useState<any[]>([]);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "", size: "", weight: "", height: "", agent_id: "" });
   const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
     try {
-      const [b, d, g, c, a, s, e] = await Promise.all([
+      const [b, d, g, c, a, s, ins] = await Promise.all([
         apiClient.bookings.list(),
         apiClient.divers.list(),
         apiClient.groups.list(),
         apiClient.courses.list(),
         apiClient.accommodations.list(),
         apiClient.bookings.getLast30Days(),
-        equipment.list(),
+        apiClient.instructors.list(),
       ]);
       setBookings(b);
       setDivers(d);
@@ -46,7 +45,7 @@ export default function BookingsPage() {
       setCourses(c);
       setAccommodations(a);
       setStats(s);
-      setEquipmentList(e.data || []);
+      setInstructors(ins || []);
     } catch (err) {
       console.error('Failed to load bookings', err);
       toast({ title: "Error", description: String(err), variant: "destructive" });
@@ -62,8 +61,10 @@ export default function BookingsPage() {
     const course = courses.find((c) => c.id === form.course_id);
     if (course) total += Number(course.price);
     const acc = accommodations.find((a) => a.id === form.accommodation_id);
-    if (acc && form.check_in && form.check_out) {
-      const nights = Math.max(1, Math.ceil((new Date(form.check_out).getTime() - new Date(form.check_in).getTime()) / 86400000));
+    const nights = (form.check_in && form.check_out)
+      ? Math.max(1, Math.ceil((new Date(form.check_out).getTime() - new Date(form.check_in).getTime()) / 86400000))
+      : 0;
+    if (acc && nights > 0) {
       total += Number(acc.price_per_night) * nights;
     }
     return total;
@@ -82,24 +83,21 @@ export default function BookingsPage() {
         check_out: booking.check_out || "",
         payment_status: booking.payment_status || "unpaid",
         notes: booking.notes || "",
+        size: booking.size || "",
+        weight: booking.weight || "",
+        height: booking.height || "",
+        agent_id: booking.agent?.id || "",
       });
-      loadRentalAssignments(booking.id);
     } else {
       setEditingId(null);
-      setForm({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "" });
-      setSelectedEquipment([]);
-      setRentalAssignmentsList([]);
+      setForm({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "", size: "", weight: "", height: "", agent_id: "" });
     }
     setOpen(true);
   };
 
-  const loadRentalAssignments = async (bookingId: string) => {
-    try {
-      const { data } = await rentalAssignments.list(bookingId);
-      setRentalAssignmentsList(data || []);
-    } catch (err) {
-      console.error('Failed to load rental assignments', err);
-    }
+  const handleOpenView = (booking: any) => {
+    setViewingId(booking.id);
+    setViewOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -119,55 +117,46 @@ export default function BookingsPage() {
     }
 
     const total = calcTotal();
+    console.log('Form data before submit:', form);
+    console.log('EditingId:', editingId);
+    
     try {
       let bookingId = editingId;
       
+      const payload = {
+        diver_id: form.diver_id,
+        course_id: form.booking_type === "course" ? form.course_id : null,
+        group_id: form.booking_type === "fun_dive" ? form.group_id : null,
+        accommodation_id: form.accommodation_id || null,
+        check_in: form.check_in || null,
+        check_out: form.check_out || null,
+        total_amount: total,
+        payment_status: form.payment_status,
+        notes: form.notes || null,
+        size: form.size || null,
+        weight: form.weight || null,
+        height: form.height || null,
+        agent_id: form.agent_id || null,
+      };
+
+      console.log('Payload to send:', payload);
+      
       if (editingId) {
-        await apiClient.bookings.update(editingId, {
-          diver_id: form.diver_id,
-          course_id: form.booking_type === "course" ? form.course_id : null,
-          group_id: form.booking_type === "fun_dive" ? form.group_id : null,
-          accommodation_id: form.accommodation_id || null,
-          check_in: form.check_in || null,
-          check_out: form.check_out || null,
-          total_amount: total,
-          payment_status: form.payment_status,
-          notes: form.notes || null,
-        });
+        await apiClient.bookings.update(editingId, payload);
         toast({ title: "Success", description: "Booking updated successfully" });
       } else {
-        const res = await apiClient.bookings.create({
-          diver_id: form.diver_id,
-          course_id: form.booking_type === "course" ? form.course_id : null,
-          group_id: form.booking_type === "fun_dive" ? form.group_id : null,
-          accommodation_id: form.accommodation_id || null,
-          check_in: form.check_in || null,
-          check_out: form.check_out || null,
-          total_amount: total,
-          notes: form.notes || null,
-        });
+        const res = await apiClient.bookings.create(payload);
         bookingId = res.id;
         toast({ title: "Success", description: "Booking created successfully" });
       }
 
-      // Save rental assignments
-      if (bookingId && selectedEquipment.length > 0) {
-        for (const eq of selectedEquipment) {
-          await rentalAssignments.create({
-            booking_id: bookingId,
-            equipment_id: eq.equipment_id,
-            quantity: eq.quantity,
-            check_in: form.check_in,
-            check_out: form.check_out,
-          });
-        }
-        toast({ title: "Success", description: `${selectedEquipment.length} equipment items assigned` });
-      }
-
+      console.log('Save successful, reloading...');
       setOpen(false);
-      setSelectedEquipment([]);
+      setEditingId(null);
+      setForm({ booking_type: "course", diver_id: "", group_id: "", course_id: "", accommodation_id: "", check_in: "", check_out: "", payment_status: "unpaid", notes: "", size: "", weight: "", height: "", agent_id: "" });
       load();
     } catch (err) {
+      console.error('Save error:', err);
       toast({ title: "Error", description: String(err), variant: "destructive" });
     }
   };
@@ -192,7 +181,7 @@ export default function BookingsPage() {
   const handleInvoiceDownload = async (booking: any) => {
     try {
       const nights = calculateNights(booking.check_in, booking.check_out);
-      const accommodationPrice = booking.accommodations?.price_per_night 
+      const accommodationPrice = booking.accommodations?.price_per_night
         ? (booking.accommodations.price_per_night * nights)
         : 0;
 
@@ -202,6 +191,10 @@ export default function BookingsPage() {
         coursePrice: booking.courses?.price || 0,
         accommodation: booking.accommodations?.name || "No Accommodation",
         accommodationPrice: accommodationPrice,
+        size: booking.size || '',
+        weight: booking.weight || '',
+        height: booking.height || '',
+        agent: booking.agent?.name || '',
         totalAmount: booking.total_amount,
         paymentStatus: booking.payment_status,
         invoiceNumber: booking.invoice_number || booking.id,
@@ -218,7 +211,7 @@ export default function BookingsPage() {
   const handleInvoicePrint = async (booking: any) => {
     try {
       const nights = calculateNights(booking.check_in, booking.check_out);
-      const accommodationPrice = booking.accommodations?.price_per_night 
+      const accommodationPrice = booking.accommodations?.price_per_night
         ? (booking.accommodations.price_per_night * nights)
         : 0;
 
@@ -228,6 +221,10 @@ export default function BookingsPage() {
         coursePrice: booking.courses?.price || 0,
         accommodation: booking.accommodations?.name || "No Accommodation",
         accommodationPrice: accommodationPrice,
+        size: booking.size || '',
+        weight: booking.weight || '',
+        height: booking.height || '',
+        agent: booking.agent?.name || '',
         totalAmount: booking.total_amount,
         paymentStatus: booking.payment_status,
         invoiceNumber: booking.invoice_number || booking.id,
@@ -366,54 +363,33 @@ export default function BookingsPage() {
                 <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
 
-              {/* Equipment Assignment */}
               <div className="border-t pt-4">
-                <Label className="text-base font-semibold mb-3 block">Equipment for Check-In</Label>
-                <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
-                  {selectedEquipment.map((sel, idx) => {
-                    const eq = equipmentList.find(e => e.id === sel.equipment_id);
-                    return (
-                      <div key={idx} className="flex items-center justify-between bg-muted/50 p-2 rounded text-sm">
-                        <div className="flex-1">
-                          <p className="font-medium">{eq?.name}</p>
-                          <p className="text-xs text-muted-foreground">${eq?.rent_price_per_day}/day × {sel.quantity}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedEquipment(selectedEquipment.filter((_, i) => i !== idx))}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
+                <Label className="text-base font-semibold mb-3 block">Details</Label>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <Label>Size</Label>
+                    <Input value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} placeholder="e.g., M, L, XL" />
+                  </div>
+                  <div>
+                    <Label>Weight (kg)</Label>
+                    <Input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="kg" />
+                  </div>
+                  <div>
+                    <Label>Height (cm)</Label>
+                    <Input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder="cm" />
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Select>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Add equipment..." />
-                    </SelectTrigger>
+
+                <div>
+                  <Label>Agent</Label>
+                  <Select value={form.agent_id} onValueChange={(v) => setForm({ ...form, agent_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select agent (optional)" /></SelectTrigger>
                     <SelectContent className="z-50">
-                      {equipmentList.filter(e => e.can_rent).map((eq) => (
-                        <SelectItem key={eq.id} value={eq.id}>
-                          {eq.name} (${eq.rent_price_per_day}/day)
-                        </SelectItem>
+                      {instructors.map((ins) => (
+                        <SelectItem key={ins.id} value={ins.id}>{ins.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const select = document.querySelector('[role="combobox"]') as HTMLElement;
-                      const value = (select?.getAttribute('data-value') || '');
-                      if (value && !selectedEquipment.find(s => s.equipment_id === value)) {
-                        setSelectedEquipment([...selectedEquipment, { equipment_id: value, quantity: 1 }]);
-                      }
-                    }}
-                  >
-                    Add
-                  </Button>
                 </div>
               </div>
 
@@ -426,6 +402,80 @@ export default function BookingsPage() {
                 <Button onClick={handleSubmit}>{editingId ? "Update" : "Create"}</Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Booking Modal */}
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Booking Details</DialogTitle>
+            </DialogHeader>
+            {viewingId && bookings.find(b => b.id === viewingId) && (() => {
+              const b = bookings.find(b => b.id === viewingId)!;
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Invoice #</p>
+                      <p className="font-mono font-medium">{b.invoice_number || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Diver</p>
+                      <p className="font-medium">{b.divers?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Course</p>
+                      <p className="font-medium">{b.courses?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Accommodation</p>
+                      <p className="font-medium">{b.accommodations?.name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Check-in</p>
+                      <p className="font-medium">{b.check_in || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Check-out</p>
+                      <p className="font-medium">{b.check_out || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Size</p>
+                      <p className="font-medium">{b.size || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Weight</p>
+                      <p className="font-medium">{b.weight || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Height</p>
+                      <p className="font-medium">{b.height || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Agent</p>
+                      <p className="font-medium">{b.agent?.name || '—'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Notes</p>
+                      <p className="font-medium">{b.notes || '—'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Total Amount</p>
+                      <p className="text-xl font-bold">${b.total_amount.toFixed(2)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Payment Status</p>
+                      <Badge className="mt-1">{b.payment_status}</Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+                    <Button onClick={() => { setViewOpen(false); handleOpenForm(b); }}>Edit</Button>
+                  </div>
+                </div>
+              );
+            })()}
           </DialogContent>
         </Dialog>
         </div>
@@ -498,6 +548,9 @@ export default function BookingsPage() {
                           </Button>
                         </>
                       )}
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenView(b)} title="View Details">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenForm(b)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
